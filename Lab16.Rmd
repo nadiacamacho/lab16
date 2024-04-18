@@ -1,0 +1,59 @@
+---
+title: "Lab 16"
+author: "Copy"
+date: "2024-04-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Using the same example/model above, generate eight Markov
+chains with 500 as burn ins, and perform diagnostics.
+
+
+
+```{r}
+library(rjags)
+
+# Data
+n = 25
+x = 4
+
+# Model
+model_string <- "model{
+  # Likelihood
+  x ~ dbinom(theta, n)
+  # Prior
+  theta ~ dbeta(1, 3)
+}"
+
+data_list = list(x = x, n = n)
+
+# Compile model with 8 chains
+model <- jags.model(textConnection(model_string), data = data_list, n.chains = 8)
+
+# Burn-in: Run the model for 500 iterations without keeping samples
+update(model, n.iter = 500, progress.bar = "none")
+
+# After burn-in, simulate additional samples
+Nrep = 10000
+posterior_sample <- coda.samples(model, variable.names = c("theta"), n.iter = Nrep, progress.bar = "none")
+
+# Summary of posterior samples
+summary(posterior_sample)
+
+# Load utilities for diagnostics and plotting
+source("DBDA2E-utilities.R")
+
+# Plot posterior distributions
+plotPost(posterior_sample)
+
+# Generate and save diagnostic plots
+diagMCMC(posterior_sample, saveName = "diagMCMC_lab16", saveType = "jpg")
+DbdaAcfPlot(posterior_sample)
+DbdaDensPlot(posterior_sample)
+
+```
+
